@@ -16,3 +16,5 @@ terraform.tfstate.backup
 envrc
 .env
 deploy/state
+
+.*.swp

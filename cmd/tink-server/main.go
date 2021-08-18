@@ -39,6 +39,10 @@ type DaemonConfig struct {
 	HTTPAuthority         string
 	HTTPBasicAuthUsername string
 	HTTPBasicAuthPassword string
+
+	K8sMode    bool
+	K8sAPI     string
+	Kubeconfig string // only applies to out of cluster
 }
 
 func (c *DaemonConfig) AddFlags(fs *pflag.FlagSet) {
@@ -52,6 +56,10 @@ func (c *DaemonConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.TLSCert, "tls-cert", "", "")
 	fs.StringVar(&c.CertDir, "cert-dir", "", "")
 	fs.StringVar(&c.HTTPAuthority, "http-authority", ":42114", "The address used to expose the HTTP server")
+
+	fs.BoolVar(&c.K8sMode, "k8s-mode", false, "When enabled use Kubernetes as the backend")
+	fs.StringVar(&c.K8sAPI, "k8s-api", "", "The Kubernetes URL")
+	fs.StringVar(&c.Kubeconfig, "kubeconfig", "", "(out-of-cluster) Absolute path to the kubeconfig file")
 }
 
 func (c *DaemonConfig) PopulateFromLegacyEnvVar() {
@@ -155,7 +163,7 @@ func NewRootCommand(config *DaemonConfig, logger log.Logger) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			tinkDB := db.Connect(dbCon, logger)
+			tinkDB := db.New(dbCon, logger)
 
 			if config.OnlyMigration {
 				logger.Info("Applying migrations. This process will end when migrations will take place.")
@@ -175,11 +183,20 @@ func NewRootCommand(config *DaemonConfig, logger log.Logger) *cobra.Command {
 				logger.Info("Your database schema is not up to date. Please apply migrations running tink-server with env var ONLY_MIGRATION set.")
 			}
 
+			var serverDB db.Database = *tinkDB
+			if config.K8sMode {
+				//var dbCopy *db.TinkDB = tinkDB.(db.TinkDB)
+				serverDB, err = db.NewK8sDB(config.Kubeconfig, config.K8sAPI, logger, tinkDB)
+				if err != nil {
+					return err
+				}
+			}
+
 			cert, modT := rpcServer.SetupGRPC(ctx, logger, &rpcServer.ConfigGRPCServer{
 				Facility:      config.Facility,
 				TLSCert:       config.TLSCert,
 				GRPCAuthority: config.GRPCAuthority,
-				DB:            tinkDB,
+				DB:            serverDB,
 			}, errCh)
 
 			httpServer.SetupHTTP(ctx, logger, &httpServer.HTTPServerConfig{

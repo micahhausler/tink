@@ -19,12 +19,13 @@ import (
 
 // Database interface for tinkerbell database operations
 type Database interface {
-	hardware
-	template
-	workflow
+	HardwareStore
+	TemplateStore
+	WorkflowStore
 }
 
-type hardware interface {
+// Hardware interface for hardware operations
+type HardwareStore interface {
 	DeleteFromDB(ctx context.Context, id string) error
 	InsertIntoDB(ctx context.Context, data string) error
 	GetByMAC(ctx context.Context, mac string) (string, error)
@@ -33,7 +34,8 @@ type hardware interface {
 	GetAll(fn func([]byte) error) error
 }
 
-type template interface {
+// Template interface for template operations
+type TemplateStore interface {
 	CreateTemplate(ctx context.Context, name string, data string, id uuid.UUID) error
 	GetTemplate(ctx context.Context, fields map[string]string, deleted bool) (*tb.WorkflowTemplate, error)
 	DeleteTemplate(ctx context.Context, name string) error
@@ -41,7 +43,8 @@ type template interface {
 	UpdateTemplate(ctx context.Context, name string, data string, id uuid.UUID) error
 }
 
-type workflow interface {
+// Workflow interface for workflow operations
+type WorkflowStore interface {
 	CreateWorkflow(ctx context.Context, wf Workflow, data string, id uuid.UUID) error
 	InsertIntoWfDataTable(ctx context.Context, req *pb.UpdateWorkflowDataRequest) error
 	GetfromWfDataTable(ctx context.Context, req *pb.GetWorkflowDataRequest) ([]byte, error)
@@ -59,17 +62,21 @@ type workflow interface {
 	ShowWorkflowEvents(wfID string, fn func(wfs *pb.WorkflowActionStatus) error) error
 }
 
+// Compile time check
+var _ Database = &TinkDB{}
+
 // TinkDB implements the Database interface
 type TinkDB struct {
 	instance *sql.DB
 	logger   log.Logger
 }
 
-// Connect returns a connection to postgres database
-func Connect(db *sql.DB, lg log.Logger) *TinkDB {
+// Connect returns a configured TinkDB
+func New(db *sql.DB, lg log.Logger) *TinkDB {
 	return &TinkDB{instance: db, logger: lg}
 }
 
+// Migrate runs any unapplied migrations
 func (t *TinkDB) Migrate() (int, error) {
 	return migrate.Exec(t.instance, "postgres", migration.GetMigrations(), migrate.Up)
 }

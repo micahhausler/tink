@@ -45,7 +45,9 @@ type ConfigGRPCServer struct {
 	Facility      string
 	TLSCert       string
 	GRPCAuthority string
-	DB            *db.TinkDB
+	DB            db.Database
+
+	kubeconfig, k8sAPI string
 }
 
 // SetupGRPC setup and return a gRPC server

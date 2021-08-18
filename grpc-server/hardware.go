@@ -168,6 +168,7 @@ func (s *server) All(_ *hardware.Empty, stream hardware.HardwareService_AllServe
 	err := s.db.GetAll(func(j []byte) error {
 		hw := &hardware.Hardware{}
 		if err := json.Unmarshal(j, hw); err != nil {
+			s.logger.Error(err, fmt.Sprintf("Error decoding hardware json: %s", string(j)))
 			return err
 		}
 		return stream.Send(hw)
@@ -308,7 +309,7 @@ func (s *server) validateHardwareData(ctx context.Context, hw *hardware.Hardware
 		mac := iface.GetDhcp().GetMac()
 
 		if data, _ := s.db.GetByMAC(ctx, mac); data != "" {
-			s.logger.With("MAC", mac).Info(duplicateMAC)
+			s.logger.With("MAC", mac).Info(duplicateMAC, data)
 
 			newhw := hardware.Hardware{}
 			if err := json.Unmarshal([]byte(data), &newhw); err != nil {

@@ -68,7 +68,7 @@ func NewPostgresDatabaseClient(t *testing.T, ctx context.Context, req NewPostgre
 		t.Fatal(err)
 	}
 
-	tinkDB := db.Connect(dbCon, log.Test(t, "db-test"))
+	tinkDB := db.New(dbCon, log.Test(t, "db-test"))
 	if req.ApplyMigration {
 		n, err := tinkDB.Migrate()
 		if err != nil {
