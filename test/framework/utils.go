@@ -10,6 +10,7 @@ var log *logrus.Entry
 // Log : This Log will be used in test cases.
 var Log = logger
 
+/*
 // SetupWorkflow ... Set up workflow
 func SetupWorkflow(tar string, tmpl string) (string, error) {
 	hardwareID := "c9d6faa4-08a2-4285-ae6c-f3401211bd56"
@@ -27,3 +28,4 @@ func SetupWorkflow(tar string, tmpl string) (string, error) {
 	logger.Infoln("Workflow Created : ", workflowID)
 	return workflowID, nil
 }
+*/

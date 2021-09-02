@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/packethost/pkg/log"
 	"github.com/tinkerbell/tink/db"
@@ -32,11 +31,15 @@ const (
 func (s *server) GetWorkflowContexts(req *pb.WorkflowContextRequest, stream pb.WorkflowService_GetWorkflowContextsServer) error {
 	wfs, err := getWorkflowsForWorker(s.db, req.WorkerId)
 	if err != nil {
+		s.logger.Error(err, "no workflows found for worker %s", req.WorkerId)
 		return err
 	}
+	s.logger.Info("Found workflows for worker %d", len(wfs))
 	for _, wf := range wfs {
+		s.logger.Info("Getting contexts for workflow %s", wf)
 		wfContext, err := s.db.GetWorkflowContexts(context.Background(), wf)
 		if err != nil {
+			s.logger.Error(err, "no contexts found for worker %s worflow %s", req.WorkerId, wf)
 			return status.Errorf(codes.Aborted, err.Error())
 		}
 		if isApplicableToSend(context.Background(), s.logger, wfContext, req.WorkerId, s.db) {
@@ -46,29 +49,6 @@ func (s *server) GetWorkflowContexts(req *pb.WorkflowContextRequest, stream pb.W
 		}
 	}
 	return nil
-}
-
-// GetWorkflowContextList implements tinkerbell.GetWorkflowContextList
-func (s *server) GetWorkflowContextList(context context.Context, req *pb.WorkflowContextRequest) (*pb.WorkflowContextList, error) {
-	wfs, err := getWorkflowsForWorker(s.db, req.WorkerId)
-	if err != nil {
-		return nil, err
-	}
-
-	if wfs != nil {
-		wfContexts := []*pb.WorkflowContext{}
-		for _, wf := range wfs {
-			wfContext, err := s.db.GetWorkflowContexts(context, wf)
-			if err != nil {
-				return nil, status.Errorf(codes.Aborted, err.Error())
-			}
-			wfContexts = append(wfContexts, wfContext)
-		}
-		return &pb.WorkflowContextList{
-			WorkflowContexts: wfContexts,
-		}, nil
-	}
-	return nil, nil
 }
 
 // GetWorkflowActions implements tinkerbell.GetWorkflowActions
@@ -128,13 +108,6 @@ func (s *server) ReportActionStatus(context context.Context, req *pb.WorkflowAct
 		return &pb.Empty{}, status.Errorf(codes.Aborted, err.Error())
 	}
 
-	// TODO the below "time" would be a part of the request which is coming form worker.
-	time := time.Now()
-	err = s.db.InsertIntoWorkflowEventTable(context, req, time)
-	if err != nil {
-		return &pb.Empty{}, status.Error(codes.Aborted, err.Error())
-	}
-
 	l = s.logger.With(
 		"workflowID", wfContext.GetWorkflowId(),
 		"currentWorker", wfContext.GetCurrentWorker(),
@@ -178,29 +151,11 @@ func (s *server) GetWorkflowData(context context.Context, req *pb.GetWorkflowDat
 	return &pb.GetWorkflowDataResponse{Data: data}, nil
 }
 
-// GetWorkflowMetadata returns metadata wrt to the ephemeral data of a workflow
-func (s *server) GetWorkflowMetadata(context context.Context, req *pb.GetWorkflowDataRequest) (*pb.GetWorkflowDataResponse, error) {
-	data, err := s.db.GetWorkflowMetadata(context, req)
-	if err != nil {
-		return &pb.GetWorkflowDataResponse{Data: []byte("")}, status.Errorf(codes.Aborted, err.Error())
-	}
-	return &pb.GetWorkflowDataResponse{Data: data}, nil
-}
-
-// GetWorkflowDataVersion returns the latest version of data for a workflow
-func (s *server) GetWorkflowDataVersion(context context.Context, req *pb.GetWorkflowDataRequest) (*pb.GetWorkflowDataResponse, error) {
-	version, err := s.db.GetWorkflowDataVersion(context, req.WorkflowId)
-	if err != nil {
-		return &pb.GetWorkflowDataResponse{Version: version}, status.Errorf(codes.Aborted, err.Error())
-	}
-	return &pb.GetWorkflowDataResponse{Version: version}, nil
-}
-
 func getWorkflowsForWorker(db db.Database, id string) ([]string, error) {
 	if id == "" {
 		return nil, status.Errorf(codes.InvalidArgument, errInvalidWorkerID)
 	}
-	wfs, err := db.GetWorkflowsForWorker(id)
+	wfs, err := db.GetWorkflowsForWorker(context.Background(), id)
 	if err != nil {
 		return nil, status.Errorf(codes.Aborted, err.Error())
 	}

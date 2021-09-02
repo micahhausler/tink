@@ -2,7 +2,6 @@ package grpcserver
 
 import (
 	"context"
-	"encoding/json"
 	"os"
 	"testing"
 	"time"
@@ -42,6 +41,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+/*
 func TestGetWorkflowContextList(t *testing.T) {
 	type (
 		args struct {
@@ -140,6 +140,7 @@ func TestGetWorkflowContextList(t *testing.T) {
 		})
 	}
 }
+*/
 
 func TestGetWorkflowActions(t *testing.T) {
 	type (
@@ -812,6 +813,7 @@ func TestGetWorkflowsForWorker(t *testing.T) {
 	}
 }
 
+/*
 func TestGetWorkflowMetadata(t *testing.T) {
 	type (
 		args struct {
@@ -969,6 +971,7 @@ func TestGetWorkflowDataVersion(t *testing.T) {
 		})
 	}
 }
+*/
 
 func TestIsApplicableToSend(t *testing.T) {
 	type (

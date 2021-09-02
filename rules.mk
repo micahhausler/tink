@@ -11,7 +11,7 @@ MAKEFLAGS += --no-builtin-rules
 SHELL := bash
 .SHELLFLAGS := -o pipefail -euc
 
-binaries := cmd/tink-cli/tink-cli cmd/tink-server/tink-server cmd/tink-worker/tink-worker
+binaries := cmd/tink-cli/tink-cli cmd/tink-server/tink-server cmd/tink-worker/tink-worker cmd/tink-controller/tink-controller
 version := $(shell git rev-parse --short HEAD)
 tag := $(shell git tag --points-at HEAD)
 ifneq (,$(tag))
@@ -23,6 +23,7 @@ export CGO_ENABLED := 0
 cli: cmd/tink-cli/tink-cli
 server: cmd/tink-server/tink-server
 worker : cmd/tink-worker/tink-worker
+controller: cmd/tink-controller/tink-controller
 
 .PHONY: server cli worker test $(binaries)
 crossbinaries := $(addsuffix -linux-,$(binaries))
@@ -37,19 +38,26 @@ crossbinaries := $(crossbinaries:=386) $(crossbinaries:=amd64) $(crossbinaries:=
 $(binaries) $(crossbinaries):
 	$(FLAGS) go build $(LDFLAGS) -o $@ ./$(@D)
 
-.PHONY: images tink-cli-image tink-server-image tink-worker-image
+.PHONY: images tink-cli-image tink-server-image tink-worker-image tink-controller-image
 tink-cli-image: cmd/tink-cli/tink-cli-linux-amd64
 	docker build -t tink-cli cmd/tink-cli/
 tink-server-image: cmd/tink-server/tink-server-linux-amd64
 	docker build -t tink-server cmd/tink-server/
 tink-worker-image: cmd/tink-worker/tink-worker-linux-amd64
 	docker build -t tink-worker cmd/tink-worker/
+tink-controller-image: cmd/tink-controller/tink-controller-linux-amd64
+	docker build -t tink-controller cmd/tink-controller/
 
 run-stack:
 	docker-compose up --build
 
-protos/gen_mock:
-	go generate ./protos/**/*
+.PHONY: moq
+moq:
+	go install github.com/matryer/moq
+
+protos/gen_mock: moq
+	rm ./protos/*/mock.go
+	go generate ./protos/...
 	goimports -w ./protos/**/mock.go
 
 grpc/gen_doc:

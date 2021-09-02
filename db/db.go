@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/google/uuid"
@@ -45,21 +44,19 @@ type TemplateStore interface {
 
 // Workflow interface for workflow operations
 type WorkflowStore interface {
-	CreateWorkflow(ctx context.Context, wf Workflow, data string, id uuid.UUID) error
 	InsertIntoWfDataTable(ctx context.Context, req *pb.UpdateWorkflowDataRequest) error
 	GetfromWfDataTable(ctx context.Context, req *pb.GetWorkflowDataRequest) ([]byte, error)
-	GetWorkflowMetadata(ctx context.Context, req *pb.GetWorkflowDataRequest) ([]byte, error)
-	GetWorkflowDataVersion(ctx context.Context, workflowID string) (int32, error)
-	GetWorkflowsForWorker(id string) ([]string, error)
-	GetWorkflow(ctx context.Context, id string) (Workflow, error)
-	DeleteWorkflow(ctx context.Context, id string, state int32) error
-	ListWorkflows(fn func(wf Workflow) error) error
-	UpdateWorkflow(ctx context.Context, wf Workflow, state int32) error
+
+	// Done
+	GetWorkflowsForWorker(ctx context.Context, id string) ([]string, error)
+
+	// called by worker
+	// Done
 	UpdateWorkflowState(ctx context.Context, wfContext *pb.WorkflowContext) error
+	// Done
 	GetWorkflowContexts(ctx context.Context, wfID string) (*pb.WorkflowContext, error)
+	// done
 	GetWorkflowActions(ctx context.Context, wfID string) (*pb.WorkflowActionList, error)
-	InsertIntoWorkflowEventTable(ctx context.Context, wfEvent *pb.WorkflowActionStatus, time time.Time) error
-	ShowWorkflowEvents(wfID string, fn func(wfs *pb.WorkflowActionStatus) error) error
 }
 
 // Compile time check

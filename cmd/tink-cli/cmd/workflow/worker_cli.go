@@ -2,13 +2,15 @@ package workflow
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
-	"time"
 
+	"github.com/google/uuid"
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/tinkerbell/tink/client"
 	"github.com/tinkerbell/tink/cmd/tink-cli/cmd/get"
 	"github.com/tinkerbell/tink/protos/workflow"
@@ -20,11 +22,18 @@ var (
 	hDevice   = "Hardware device"
 )
 
+func validateID(id string) error {
+	if _, err := uuid.Parse(id); err != nil {
+		return fmt.Errorf("invalid uuid: %s", id)
+	}
+	return nil
+}
+
 // getCmd represents the get subcommand for workflow command
 var GetCmd = &cobra.Command{
-	Use:     "get [id]",
-	Short:   "get a workflow",
-	Example: "tink workflow get [id]",
+	Use:     "get-workflow-actions [id]",
+	Short:   "get workflow actions",
+	Example: "tink workflow get-workflow-actions [id]",
 	Deprecated: `This command is deprecated and it will change at some
 	point. Please unset the environment variable TINK_CLI_VERSION and if
 	you are doing some complex automation try using the following command:
@@ -39,15 +48,21 @@ var GetCmd = &cobra.Command{
 		}
 		return validateID(args[0])
 	},
-	Run: func(c *cobra.Command, args []string) {
+	RunE: func(c *cobra.Command, args []string) error {
 		for _, arg := range args {
-			req := workflow.GetRequest{Id: arg}
-			w, err := client.WorkflowClient.GetWorkflow(context.Background(), &req)
+			req := workflow.WorkflowActionsRequest{WorkflowId: arg}
+			actionList, err := client.WorkflowClient.GetWorkflowActions(context.Background(), &req)
 			if err != nil {
 				log.Fatal(err)
+				return err
 			}
-			fmt.Println(w.Data)
+			output, err := json.MarshalIndent(actionList.ActionList, "", "  ")
+			if err != nil {
+				return err
+			}
+			fmt.Println(string(output))
 		}
+		return nil
 	},
 }
 
@@ -59,21 +74,21 @@ type getWorkflow struct {
 }
 
 func (h *getWorkflow) RetrieveByID(ctx context.Context, cl *client.FullClient, requestedID string) (interface{}, error) {
-	return cl.WorkflowClient.GetWorkflow(ctx, &workflow.GetRequest{
-		Id: requestedID,
+	return cl.WorkflowClient.GetWorkflowActions(ctx, &workflow.WorkflowActionsRequest{
+		WorkflowId: requestedID,
 	})
 }
 
 func (h *getWorkflow) RetrieveData(ctx context.Context, cl *client.FullClient) ([]interface{}, error) {
-	list, err := cl.WorkflowClient.ListWorkflows(ctx, &workflow.Empty{})
+	list, err := cl.WorkflowClient.GetWorkflowContexts(ctx, &workflow.WorkflowContextRequest{WorkerId: viper.GetString("worker-id")})
 	if err != nil {
 		return nil, err
 	}
 
 	data := []interface{}{}
 
-	var w *workflow.Workflow
-	for w, err = list.Recv(); err == nil && w.Id != ""; w, err = list.Recv() {
+	var w *workflow.WorkflowContext
+	for w, err = list.Recv(); err == nil && w.WorkflowId != ""; w, err = list.Recv() {
 		data = append(data, w)
 	}
 	if err != nil && err != io.EOF {
@@ -84,11 +99,21 @@ func (h *getWorkflow) RetrieveData(ctx context.Context, cl *client.FullClient) (
 
 func (h *getWorkflow) PopulateTable(data []interface{}, t table.Writer) error {
 	for _, v := range data {
-		if w, ok := v.(*workflow.Workflow); ok {
-			t.AppendRow(table.Row{w.Id, w.Template,
-				w.State.String(),
-				w.CreatedAt.AsTime().UTC().Format(time.RFC3339),
-				w.UpdatedAt.AsTime().UTC().Format(time.RFC3339)})
+		if w, ok := v.(*workflow.WorkflowContext); ok {
+			t.AppendRow(table.Row{
+				w.WorkflowId,
+				w.CurrentAction,
+				w.CurrentWorker,
+			})
+		}
+		if w, ok := v.(*workflow.WorkflowActionList); ok {
+			for _, action := range w.ActionList {
+				t.AppendRow(table.Row{
+					action.TaskName,
+					action.Name,
+					action.WorkerId,
+				})
+			}
 		}
 	}
 	return nil
@@ -97,7 +122,7 @@ func (h *getWorkflow) PopulateTable(data []interface{}, t table.Writer) error {
 func NewGetOptions() get.Options {
 	h := getWorkflow{}
 	opt := get.Options{
-		Headers:       []string{"ID", "Template ID", "State", "Created At", "Updated At"},
+		Headers:       []string{"TaskName", "Template Name", "Worker ID"},
 		RetrieveByID:  h.RetrieveByID,
 		RetrieveData:  h.RetrieveData,
 		PopulateTable: h.PopulateTable,

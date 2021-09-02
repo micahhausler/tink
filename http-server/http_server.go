@@ -67,10 +67,10 @@ func SetupHTTP(ctx context.Context, lg log.Logger, config *HTTPServerConfig, err
 	if err != nil {
 		logger.Error(err)
 	}
-	err = RegisterWorkflowSvcHandlerFromEndpoint(ctx, mux, grpcEndpoint, dialOpts)
-	if err != nil {
-		logger.Error(err)
-	}
+	// err = RegisterWorkflowSvcHandlerFromEndpoint(ctx, mux, grpcEndpoint, dialOpts)
+	// if err != nil {
+	// 	logger.Error(err)
+	// }
 
 	http.HandleFunc("/cert", func(w http.ResponseWriter, r *http.Request) {
 		http.ServeContent(w, r, "server.pem", config.ModTime, bytes.NewReader(config.CertPEM))

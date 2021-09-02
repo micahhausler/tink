@@ -84,11 +84,14 @@ func removeContainer(ctx context.Context, cli *dc.Client, id string) error {
 	log.Println("Worker Container removed : ", id)
 	return nil
 }
+
+/*
 func checkCurrentStatus(ctx context.Context, wfID string, workflowStatus chan workflow.State) {
 	for len(workflowStatus) == 0 {
 		GetCurrentStatus(ctx, wfID, workflowStatus)
 	}
 }
+*/
 
 func captureLogs(ctx context.Context, cli *dc.Client, id string) {
 	reader, err := cli.ContainerLogs(context.Background(), id, types.ContainerLogsOptions{
@@ -145,7 +148,7 @@ func StartWorkers(workers int64, workerStatus chan<- int64, wfID string) (workfl
 				go captureLogs(ctx, cli, cID)
 
 				go waitContainer(ctx, cli, cID, &wg, failedWorkers, workerStatus, stopLogs)
-				go checkCurrentStatus(ctx, wfID, workflowStatus)
+				// go checkCurrentStatus(ctx, wfID, workflowStatus)
 			}
 		}
 	}

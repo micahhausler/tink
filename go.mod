@@ -7,12 +7,14 @@ require (
 	github.com/docker/distribution v2.7.1+incompatible
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200916142827-bd33bbf0497b+incompatible
 	github.com/docker/go-units v0.4.0 // indirect
+	github.com/go-logr/zapr v0.4.0
 	github.com/go-openapi/strfmt v0.19.3 // indirect
+	github.com/golang/glog v0.0.0-20210429001901-424d2337a529 // indirect
 	github.com/golang/protobuf v1.5.2
-	github.com/google/go-cmp v0.5.5
-	github.com/google/uuid v1.1.2
+	github.com/google/go-cmp v0.5.6
+	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/grpc-ecosystem/grpc-gateway v1.15.2
+	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/jedib0t/go-pretty v4.3.0+incompatible
 	github.com/lib/pq v1.2.1-0.20191011153232-f91d3411e481
 	github.com/mattn/go-runewidth v0.0.5 // indirect
@@ -22,6 +24,7 @@ require (
 	github.com/prometheus/client_golang v1.11.0
 	github.com/rubenv/sql-migrate v0.0.0-20200616145509-8d140a17f351
 	github.com/sirupsen/logrus v1.7.0
+	github.com/spf13/afero v1.3.4 // indirect
 	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.0
@@ -29,14 +32,16 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/testcontainers/testcontainers-go v0.9.0
 	go.mongodb.org/mongo-driver v1.1.2 // indirect
-	google.golang.org/genproto v0.0.0-20201110150050-8816d57aaa9a
-	google.golang.org/grpc v1.32.0
-	google.golang.org/protobuf v1.26.0
+	go.uber.org/multierr v1.6.0
+	google.golang.org/genproto v0.0.0-20210825212027-de86158e7fda
+	google.golang.org/grpc v1.40.0
+	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools v2.2.0+incompatible // indirect
-	k8s.io/apimachinery v0.22.0
-	k8s.io/client-go v0.22.0
+	k8s.io/apimachinery v0.22.1
+	k8s.io/client-go v0.22.1
 	k8s.io/utils v0.0.0-20210722164352-7f3ee0f31471
+	knative.dev/pkg v0.0.0-20210827184538-2bd91f75571c
 	sigs.k8s.io/controller-runtime v0.9.6
 )
 

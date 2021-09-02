@@ -35,8 +35,9 @@ type WorkflowSpec struct {
 	// Name of the Template associated with this workflow.
 	TemplateRef string `json:"templateRef,omitempty"`
 
-	// Name of the Hardware associated with this workflow.
-	HardwareRef string `json:"hardwareRef,omitempty"`
+	// // Name of the Hardware associated with this workflow.
+	// HardwareRef string `json:"hardwareRef,omitempty"`
+	HardwareMap map[string]string `json:"hardwareMap,omitempty"`
 
 	// Equivalent to the devices column in the workflow table
 	Devices map[string]string `json:"devices,omitempty"`
@@ -50,49 +51,70 @@ type WorkflowStatus struct {
 	// Data is the populated Workflow Data in Tinkerbell.
 	Data string `json:"data,omitempty"`
 
-	// Metadata is the metadata stored in Tinkerbell.
-	Metadata string `json:"metadata,omitempty"`
+	//GlobalTimeout represents the max execution time
+	GlobalTimeout int64 `json:"globalTimeout,omitempty"`
+
+	// // Metadata is the metadata stored in Tinkerbell.
+	// Metadata string `json:"metadata,omitempty"`
+
+	// Tasks are the tasks to be completed
+	Tasks []Task `json:"tasks,omitempty"`
 
 	// Actions are the actions for this Workflow.
-	Actions []Action `json:"actions,omitempty"`
+	// Actions []Action `json:"actions,omitempty"`
 
 	// Events are events for this Workflow.
-	Events []Event `json:"events,omitempty"`
+	// Events []Event `json:"events,omitempty"`
 
-	CurrentState Event `json:"currentState,omitempty"`
+	// CurrentState Event `json:"currentState,omitempty"`
+}
+
+// Task represents
+type Task struct {
+	Name        string            `json:"name"`
+	WorkerAddr  string            `json:"worker"`
+	Actions     []Action          `json:"actions"`
+	Volumes     []string          `json:"volumes,omitempty"`
+	Environment map[string]string `json:"environment,omitempty"`
 }
 
 // Action represents a workflow action.
 type Action struct {
-	TaskName    string   `json:"task_name,omitempty"`
-	Name        string   `json:"name,omitempty"`
-	Image       string   `json:"image,omitempty"`
-	Timeout     int64    `json:"timeout,omitempty"`
-	Command     []string `json:"command,omitempty"`
-	OnTimeout   []string `json:"on_timeout,omitempty"`
-	OnFailure   []string `json:"on_failure,omitempty"`
-	WorkerID    string   `json:"worker_id,omitempty"`
-	Volumes     []string `json:"volumes,omitempty"`
-	Environment []string `json:"environment,omitempty"`
-	Pid         string   `json:"pid,omitempty"`
+	Name        string            `json:"name,omitempty"`
+	Image       string            `json:"image,omitempty"`
+	Timeout     int64             `json:"timeout,omitempty"`
+	Command     []string          `json:"command,omitempty"`
+	Volumes     []string          `json:"volumes,omitempty"`
+	Pid         string            `json:"pid,omitempty"`
+	Environment map[string]string `json:"environment,omitempty"`
+	// OnTimeout []string `json:"onTimeout,omitempty"`
+	// OnFailure []string `json:"onFailure,omitempty"`
+	// WorkerID    string   `json:"workerID,omitempty"`
+
+	Status    string       `json:"status,omitempty"`
+	StartedAt *metav1.Time `json:"startedAt,omitempty"`
+	Seconds   int64        `json:"seconds,omitempty"`
+	Message   string       `json:"message,omitempty"`
 }
 
-// Event represents a workflow event.
-type Event struct {
-	TaskName     string      `json:"task_name,omitempty"`
-	ActionName   string      `json:"action_name,omitempty"`
-	ActionStatus string      `json:"action_status,omitempty"`
-	Seconds      int64       `json:"seconds,omitempty"`
-	Message      string      `json:"message,omitempty"`
-	CreatedAt    metav1.Time `json:"created_at,omitempty"`
-	WorkerID     string      `json:"worker_id,omitempty"`
-	ActionIndex  int64       `json:"action_index,omitempty"`
-}
+// // Event represents a workflow event.
+// type Event struct {
+// 	TaskName     string      `json:"taskName,omitempty"`
+// 	ActionName   string      `json:"actionName,omitempty"`
+// 	ActionStatus string      `json:"actionStatus,omitempty"`
+// 	Seconds      int64       `json:"seconds,omitempty"`
+// 	Message      string      `json:"message,omitempty"`
+// 	CreatedAt    metav1.Time `json:"createdAt,omitempty"`
+// 	WorkerID     string      `json:"workerID,omitempty"`
+// 	ActionIndex  int64       `json:"actionIndex,omitempty"`
+// }
 
 // +kubebuilder:subresource:status
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:path=workflows,scope=Cluster,categories=tinkerbell
+// +kubebuilder:resource:path=workflows,scope=Cluster,categories=tinkerbell,shortName=wf,singular=workflow
 // +kubebuilder:storageversion
+// +kubebuilder:printcolumn:JSONPath=".spec.templateRef",name=Template,type=string
+// +kubebuilder:printcolumn:JSONPath=".status.state",name=State,type=string
 
 // Workflow is the Schema for the Workflows API.
 type Workflow struct {

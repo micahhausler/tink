@@ -18,3 +18,7 @@ envrc
 deploy/state
 
 .*.swp
+
+hack/tools
+
+doc

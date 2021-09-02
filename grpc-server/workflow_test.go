@@ -1,18 +1,5 @@
 package grpcserver
 
-import (
-	"context"
-	"testing"
-
-	"github.com/google/uuid"
-	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
-	"github.com/tinkerbell/tink/db"
-	"github.com/tinkerbell/tink/db/mock"
-	tb "github.com/tinkerbell/tink/protos/template"
-	"github.com/tinkerbell/tink/protos/workflow"
-)
-
 const (
 	templateID   = "e29b6444-1de7-4a69-bf25-6ea4ae869005"
 	hw           = `{"device_1": "08:00:27:00:00:01"}`
@@ -28,6 +15,7 @@ tasks:
       timeout: 60`
 )
 
+/*
 func TestCreateWorkflow(t *testing.T) {
 	type (
 		args struct {
@@ -125,6 +113,7 @@ func TestCreateWorkflow(t *testing.T) {
 		})
 	}
 }
+
 
 func TestGetWorkflow(t *testing.T) {
 	type (
@@ -291,3 +280,4 @@ func TestGetWorkflowContext(t *testing.T) {
 		})
 	}
 }
+*/

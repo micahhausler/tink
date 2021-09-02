@@ -13,7 +13,6 @@ import (
 	"github.com/tinkerbell/tink/pkg"
 	"github.com/tinkerbell/tink/protos/hardware"
 	"github.com/tinkerbell/tink/protos/template"
-	"github.com/tinkerbell/tink/protos/workflow"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -383,6 +382,7 @@ func RegisterTemplateHandlerFromEndpoint(ctx context.Context, mux *runtime.Serve
 	return nil
 }
 
+/*
 // RegisterWorkflowSvcHandlerFromEndpoint serves Workflow requests at the given
 // endpoint over GRPC
 func RegisterWorkflowSvcHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) error {
@@ -579,6 +579,7 @@ func RegisterWorkflowSvcHandlerFromEndpoint(ctx context.Context, mux *runtime.Se
 
 	return nil
 }
+*/
 
 func tryParseTemplate(data string) error {
 	tmpl := *tt.New("")

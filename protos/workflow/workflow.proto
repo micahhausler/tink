@@ -8,7 +8,6 @@ option go_package = "github.com/tinkerbell/tink/protos/workflow";
 
 package github.com.tinkerbell.tink.protos.workflow;
 
-import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 
 /*
@@ -16,68 +15,10 @@ import "google/protobuf/timestamp.proto";
  * monitoring a workflow
  */
 service WorkflowService {
-  /*
-   * CreateWorkflow targets a specific hardware and it starts from a particular
-   * template. The selected hardware is capable of picking the
-   * workflow up for execution.
-   */
-  rpc CreateWorkflow(CreateRequest) returns (CreateResponse) {
-    option (google.api.http) = {
-      post: "/v1/workflows"
-      body: "*"
-    };
-  };
-  /*
-   * GetWorkflow returns a specific workflow by its identifier.
-   */
-  rpc GetWorkflow(GetRequest) returns (Workflow) {
-    option (google.api.http) = {
-      get: "/v1/workflows/{id}"
-    };
-  };
-  /*
-   * DeleteWorkflow deletes a workflow. This is a logical deletion. Workflow
-   * will stay available for inspection
-   */
-  rpc DeleteWorkflow(GetRequest) returns (Empty) {
-    option (google.api.http) = {
-      delete: "/v1/workflows/{id}"
-    };
-  };
-  /*
-   * ListWorkflows returns a list of workflows
-   */
-  rpc ListWorkflows(Empty) returns (stream Workflow) {
-    option (google.api.http) = {
-      get: "/v1/workflows"
-    };
-  };
-  /*
-   * GetWorkflowContext returns specific information about where it is running,
-   * its state and so on. Useful to debug a workflow and to understand its
-   * current state.
-   */
-  rpc GetWorkflowContext(GetRequest) returns (WorkflowContext) {
-    option (google.api.http) = {
-      get: "/v1/workflows/{id}/state"
-    };
-  };
-  /*
-   * ShowWorkflowEvents returns a list of events for a specific workflows
-   */
-  rpc ShowWorkflowEvents(GetRequest) returns (stream WorkflowActionStatus) {
-    option (google.api.http) = {
-      get: "/v1/workflows/{id}/events"
-    };
-  };
-
-  rpc GetWorkflowContextList(WorkflowContextRequest) returns (WorkflowContextList) {}
   rpc GetWorkflowContexts(WorkflowContextRequest) returns (stream WorkflowContext) {}
   rpc GetWorkflowActions(WorkflowActionsRequest) returns (WorkflowActionList) {}
   rpc ReportActionStatus(WorkflowActionStatus) returns (Empty) {}
   rpc GetWorkflowData(GetWorkflowDataRequest) returns (GetWorkflowDataResponse) {}
-  rpc GetWorkflowMetadata(GetWorkflowDataRequest) returns (GetWorkflowDataResponse) {}
-  rpc GetWorkflowDataVersion(GetWorkflowDataRequest) returns (GetWorkflowDataResponse) {}
   rpc UpdateWorkflowData(UpdateWorkflowDataRequest) returns (Empty) {}
 }
 
@@ -85,41 +26,6 @@ service WorkflowService {
  * Empty represents an empty response
  */
 message Empty {
-}
-
-/*
- * Workflow represent a single workflow
- */
-message Workflow {
-  /*
-   * The unique identifier for a workflow
-   */
-  string id = 1;
-  /*
-   * The template this workflows starts from
-   */
-  string template = 2;
-  /*
-   * The hardware assigned to a workflow
-   */
-  string hardware = 3;
-  /*
-   * Current state of the workflow. Pending, success, failed, running.
-   */
-  State state = 4;
-  /*
-   * When the workflow was created
-   */
-  google.protobuf.Timestamp created_at = 5;
-  /*
-   * The last time the workflow was modified
-   */
-  google.protobuf.Timestamp updated_at = 6;
-  /*
-   * When the workflow was deleted
-   */
-  google.protobuf.Timestamp deleted_at = 7;
-  string data = 8;
 }
 
 /*
@@ -155,37 +61,6 @@ enum State {
   STATE_SUCCESS = 4;
 }
 
-/*
- * CreateRequest registers a workflow in the Tinkerbell server. From this point
- * in time it is in pending state, waiting to be executed from the tink-worker
- * inside the selected hardware
- */
-message CreateRequest {
-  /*
-   * The idenfier of the template the workflow starts from.
-   */
-  string template = 1;
-  /*
-   * The target hardware for this workflow.
-   */
-  string hardware = 2;
-}
-
-/*
- * This is the response returned after a successful workflow creation. It
- * contains the workflow id.
- */
-message CreateResponse {
-  string id = 1;
-}
-
-/*
- * GetRequest contains the workflow idenfier you want to get back from the
- * Tinkerbell server.
- */
-message GetRequest {
-  string id = 1;
-}
 
 /*
  * WorkflowContext represents the state of the execution of this workflow in detail.
@@ -265,12 +140,6 @@ message WorkflowContextRequest {
   /*
    */
   string worker_id = 1;
-}
-
-/*
- */
-message WorkflowContextList {
-  repeated WorkflowContext workflow_contexts = 1;
 }
 
 /*

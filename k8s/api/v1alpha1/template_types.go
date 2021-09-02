@@ -54,6 +54,7 @@ type TemplateStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=templates,scope=Cluster,categories=tinkerbell
 // +kubebuilder:storageversion
+// +kubebuilder:printcolumn:JSONPath=".status.state",name=State,type=string
 
 // Template is the Schema for the Templates API.
 type Template struct {

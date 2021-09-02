@@ -16,8 +16,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/tinkerbell/tink/db"
 	"github.com/tinkerbell/tink/metrics"
-	"github.com/tinkerbell/tink/protos/hardware"
-	"github.com/tinkerbell/tink/protos/template"
 	"github.com/tinkerbell/tink/protos/workflow"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -46,8 +44,6 @@ type ConfigGRPCServer struct {
 	TLSCert       string
 	GRPCAuthority string
 	DB            db.Database
-
-	kubeconfig, k8sAPI string
 }
 
 // SetupGRPC setup and return a gRPC server
@@ -74,9 +70,9 @@ func SetupGRPC(ctx context.Context, logger log.Logger, config *ConfigGRPCServer,
 
 	// register servers
 	s := grpc.NewServer(params...)
-	template.RegisterTemplateServiceServer(s, server)
+	// template.RegisterTemplateServiceServer(s, server)
 	workflow.RegisterWorkflowServiceServer(s, server)
-	hardware.RegisterHardwareServiceServer(s, server)
+	// hardware.RegisterHardwareServiceServer(s, server)
 	reflection.Register(s)
 
 	grpc_prometheus.Register(s)

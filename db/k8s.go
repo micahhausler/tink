@@ -1,12 +1,12 @@
 package db
 
 import (
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/cache"
+	"context"
+
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/packethost/pkg/log"
-	"github.com/tinkerbell/tink/k8s/api"
+	"github.com/tinkerbell/tink/pkg/controllers"
 )
 
 // Compile time check
@@ -17,29 +17,17 @@ func NewK8sDB(kubeconfig, k8sAPI string, logger log.Logger, db Database) (Databa
 	if err != nil {
 		return nil, err
 	}
-	k8sTinkClient, err := api.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
+	manager := controllers.NewManagerOrDie(config, controllers.GetServerOptions())
+	go manager.Start(context.Background())
 	return &K8sDB{
 		db,
 		logger,
-		config,
-		k8sTinkClient,
-		NewHardwareIndexerInformer(k8sTinkClient),
-		NewTemplateIndexerInformer(k8sTinkClient),
-		NewWorkflowIndexerInformer(k8sTinkClient),
+		manager,
 	}, nil
 }
 
 type K8sDB struct {
 	Database
-	logger    log.Logger
-	config    *rest.Config
-	k8sClient api.TinkerbellV1Alpha1Interface
-
-	hwIndexer cache.Indexer
-	tIndexer  cache.Indexer
-	wfIndexer cache.Indexer
+	logger  log.Logger
+	manager controllers.Manager
 }

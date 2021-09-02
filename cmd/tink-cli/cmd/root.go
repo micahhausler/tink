@@ -31,7 +31,7 @@ func setupClient(_ *cobra.Command, _ []string) error {
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute(version string) error {
 	rootCmd.Version = version
-	rootCmd.AddCommand(NewHardwareCommand())
+	// rootCmd.AddCommand(NewHardwareCommand())
 	rootCmd.AddCommand(NewTemplateCommand())
 	rootCmd.AddCommand(NewWorkflowCommand())
 	return rootCmd.Execute()

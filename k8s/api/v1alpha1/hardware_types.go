@@ -33,9 +33,18 @@ const (
 
 // HardwareSpec defines the desired state of Hardware.
 type HardwareSpec struct {
-	// ID is the ID of the hardware in Tinkerbell
-	// +kubebuilder:validation:MinLength=1
-	ID string `json:"id"`
+
+	//+optional
+	Interfaces []Interface `json:"interfaces,omitempty"`
+
+	//+optional
+	Metadata string `json:"metadata,omitempty"`
+
+	//+optional
+	TinkVersion int64 `json:"tinkVersion,omitempty"`
+
+	//+optional
+	Disks []Disk `json:"disks,omitempty"`
 
 	// UserData is the user data to configure in the hardware's
 	// metadata
@@ -45,18 +54,6 @@ type HardwareSpec struct {
 
 // HardwareStatus defines the observed state of Hardware.
 type HardwareStatus struct {
-	//+optional
-	TinkMetadata string `json:"tinkMetadata,omitempty"`
-
-	//+optional
-	TinkVersion int64 `json:"tinkVersion,omitempty"`
-
-	//+optional
-	Interfaces []Interface `json:"interfaces,omitempty"`
-
-	//+optional
-	Disks []Disk `json:"disks,omitempty"`
-
 	//+optional
 	State HardwareState `json:"state,omitempty"`
 }
@@ -129,6 +126,7 @@ type IP struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:path=hardware,scope=Cluster,categories=tinkerbell,singular=hardware
 // +kubebuilder:storageversion
+// +kubebuilder:printcolumn:JSONPath=".status.state",name=State,type=string
 
 // Hardware is the Schema for the Hardware API.
 type Hardware struct {
@@ -137,11 +135,6 @@ type Hardware struct {
 
 	Spec   HardwareSpec   `json:"spec,omitempty"`
 	Status HardwareStatus `json:"status,omitempty"`
-}
-
-// TinkID returns the Tinkerbell ID associated with this Hardware.
-func (h *Hardware) TinkID() string {
-	return h.Spec.ID
 }
 
 // +kubebuilder:object:root=true

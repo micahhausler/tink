@@ -5,10 +5,14 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/tinkerbell/tink/cmd/tink-cli/cmd/delete"
+	"github.com/spf13/viper"
 	"github.com/tinkerbell/tink/cmd/tink-cli/cmd/get"
 	"github.com/tinkerbell/tink/cmd/tink-cli/cmd/workflow"
 )
+
+var WorkflowOpts = struct {
+	WorkerId string
+}{}
 
 func NewWorkflowCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -22,13 +26,13 @@ func NewWorkflowCommand() *cobra.Command {
 			return nil
 		},
 	}
-
-	cmd.AddCommand(workflow.NewCreateCommand())
-	cmd.AddCommand(workflow.NewDataCommand())
-	cmd.AddCommand(delete.NewDeleteCommand(workflow.NewDeleteOptions()))
-	cmd.AddCommand(workflow.NewShowCommand())
-	cmd.AddCommand(workflow.NewListCommand())
-	cmd.AddCommand(workflow.NewStateCommand())
+	cmd.PersistentFlags().StringVar(&WorkflowOpts.WorkerId, "worker-id", "", "Worker ID to query")
+	// cmd.AddCommand(workflow.NewCreateCommand())
+	// cmd.AddCommand(workflow.NewDataCommand())
+	// cmd.AddCommand(delete.NewDeleteCommand(workflow.NewDeleteOptions()))
+	// cmd.AddCommand(workflow.NewShowCommand())
+	// cmd.AddCommand(workflow.NewListCommand())
+	// cmd.AddCommand(workflow.NewStateCommand())
 
 	// If the variable TINK_CLI_VERSION is not set to 0.0.0 use the old get
 	// command
@@ -36,6 +40,9 @@ func NewWorkflowCommand() *cobra.Command {
 	if v := os.Getenv("TINK_CLI_VERSION"); v != "0.0.0" {
 		getCmd = get.NewGetCommand(workflow.NewGetOptions())
 	}
+
 	cmd.AddCommand(getCmd)
+
+	viper.BindPFlags(cmd.PersistentFlags())
 	return cmd
 }
