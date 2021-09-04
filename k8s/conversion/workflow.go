@@ -113,11 +113,19 @@ func K8sActionListToTink(wf *v1alpha1.Workflow) *workflow.WorkflowActionList {
 				Command:  action.Command,
 				WorkerId: task.WorkerAddr,
 				Volumes:  task.Volumes,
-				Environment: func(env map[string]string) (resp []string) {
+				Environment: func(env map[string]string) []string {
+					resp := []string{}
+					merged := map[string]string{}
 					for k, v := range env {
+						merged[k] = v
+					}
+					for k, v := range action.Environment {
+						merged[k] = v
+					}
+					for k, v := range merged {
 						resp = append(resp, fmt.Sprintf("%s=%s", k, v))
 					}
-					return
+					return resp
 				}(task.Environment),
 				Pid: action.Pid,
 			})

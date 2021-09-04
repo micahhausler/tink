@@ -12,18 +12,17 @@ import (
 // Compile time check
 var _ Database = &K8sDB{}
 
-func NewK8sDB(kubeconfig, k8sAPI string, logger log.Logger, db Database) (Database, error) {
+func NewK8sDB(kubeconfig, k8sAPI string, logger log.Logger) (Database, error) {
 	config, err := clientcmd.BuildConfigFromFlags(k8sAPI, kubeconfig)
 	if err != nil {
 		return nil, err
 	}
 	manager := controllers.NewManagerOrDie(config, controllers.GetServerOptions())
 	go manager.Start(context.Background())
-	return &K8sDB{
-		db,
-		logger,
-		manager,
-	}, nil
+	db := &K8sDB{}
+	db.logger = logger
+	db.manager = manager
+	return db, nil
 }
 
 type K8sDB struct {

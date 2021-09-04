@@ -3,7 +3,7 @@ all: cli server worker ## Build all binaries for host OS and CPU
 -include rules.mk
 
 crosscompile: $(crossbinaries) ## Build all binaries for Linux and all supported CPU arches
-images: tink-cli-image tink-server-image tink-worker-image tink-controller-image ## Build all docker images
+images: tink-cli-image tink-server-image tink-worker-image tink-controller-image virtual-worker-image ## Build all docker images
 run: crosscompile run-stack ## Builds and runs the Tink stack (tink, db, cli) via docker-compose
 
 test: ## Run tests
@@ -18,10 +18,7 @@ help: ## Print this help
 	@grep --no-filename -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sed 's/:.*##/·/' | sort | column -ts '·' -c 120
 
 rebuild: tink-server-image
-	cd ~/go/src/github.com/tinkerbell/sandbox/deploy && docker-compose kill tink-server && docker-compose rm -f tink-server && docker-compose up -d
-	sleep 5
-	./cmd/tink-cli/tink-cli  workflow get  wf1
-
+	cd ~/go/src/github.com/tinkerbell/sandbox/deploy && docker-compose kill tink-server && docker-compose rm -f tink-server && docker-compose up -d && cd -
 
 GO_INSTALL = ./scripts/go_install.sh
 TOOLS_DIR := hack/tools

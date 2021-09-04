@@ -186,7 +186,7 @@ func NewRootCommand(config *DaemonConfig, logger log.Logger) *cobra.Command {
 			var serverDB db.Database = *tinkDB
 			if config.K8sMode {
 				//var dbCopy *db.TinkDB = tinkDB.(db.TinkDB)
-				serverDB, err = db.NewK8sDB(config.Kubeconfig, config.K8sAPI, logger, tinkDB)
+				serverDB, err = db.NewK8sDB(config.Kubeconfig, config.K8sAPI, logger)
 				if err != nil {
 					return err
 				}

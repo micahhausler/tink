@@ -2,6 +2,7 @@ package grpcserver
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -20,7 +21,7 @@ const (
 	errInvalidTaskName       = "invalid task name"
 	errInvalidActionName     = "invalid action name"
 	errInvalidTaskReported   = "reported task name does not match the current action details"
-	errInvalidActionReported = "reported action name does not match the current action details"
+	errInvalidActionReported = "reported action name does not match the current action details. Got %s expected %s"
 
 	msgReceivedStatus   = "received action status: %s"
 	msgCurrentWfContext = "current workflow context"
@@ -34,15 +35,17 @@ func (s *server) GetWorkflowContexts(req *pb.WorkflowContextRequest, stream pb.W
 		s.logger.Error(err, "no workflows found for worker %s", req.WorkerId)
 		return err
 	}
-	s.logger.Info("Found workflows for worker %d", len(wfs))
+	s.logger.Info("Found workflows for worker ", len(wfs))
 	for _, wf := range wfs {
-		s.logger.Info("Getting contexts for workflow %s", wf)
+		s.logger.Info("Getting contexts for workflow ", wf)
 		wfContext, err := s.db.GetWorkflowContexts(context.Background(), wf)
 		if err != nil {
 			s.logger.Error(err, "no contexts found for worker %s worflow %s", req.WorkerId, wf)
 			return status.Errorf(codes.Aborted, err.Error())
 		}
 		if isApplicableToSend(context.Background(), s.logger, wfContext, req.WorkerId, s.db) {
+			data, _ := json.Marshal(wfContext)
+			s.logger.Info(fmt.Sprintf("Sending wfContext: %s", data))
 			if err := stream.Send(wfContext); err != nil {
 				return err
 			}
@@ -62,6 +65,7 @@ func (s *server) GetWorkflowActions(context context.Context, req *pb.WorkflowAct
 
 // ReportActionStatus implements tinkerbell.ReportActionStatus
 func (s *server) ReportActionStatus(context context.Context, req *pb.WorkflowActionStatus) (*pb.Empty, error) {
+
 	wfID := req.GetWorkflowId()
 	if wfID == "" {
 		return nil, status.Errorf(codes.InvalidArgument, errInvalidWorkflowId)
@@ -75,6 +79,8 @@ func (s *server) ReportActionStatus(context context.Context, req *pb.WorkflowAct
 
 	l := s.logger.With("actionName", req.GetActionName(), "workflowID", req.GetWorkflowId())
 	l.Info(fmt.Sprintf(msgReceivedStatus, req.GetActionStatus()))
+	data, _ := json.Marshal(req)
+	l.Info(fmt.Sprintf("Got Request Content: %s", string(data)))
 
 	wfContext, err := s.db.GetWorkflowContexts(context, wfID)
 	if err != nil {
@@ -86,17 +92,21 @@ func (s *server) ReportActionStatus(context context.Context, req *pb.WorkflowAct
 	}
 
 	actionIndex := wfContext.GetCurrentActionIndex()
-	if req.GetActionStatus() == pb.State_STATE_RUNNING {
-		if wfContext.GetCurrentAction() != "" {
-			actionIndex = actionIndex + 1
+	// mhausler: I'm not sure why the following block is here?
+	/*
+		if req.GetActionStatus() == pb.State_STATE_SUCCESS {
+			if wfContext.GetCurrentAction() != "" {
+				actionIndex = actionIndex + 1
+			}
 		}
-	}
+	*/
+	l.Info(fmt.Sprintf("CurrentActionIndex: %d", actionIndex))
 	action := wfActions.ActionList[actionIndex]
 	if action.GetTaskName() != req.GetTaskName() {
 		return nil, status.Errorf(codes.InvalidArgument, errInvalidTaskReported)
 	}
 	if action.GetName() != req.GetActionName() {
-		return nil, status.Errorf(codes.InvalidArgument, errInvalidActionReported)
+		return nil, status.Errorf(codes.InvalidArgument, errInvalidActionReported, req.GetActionName(), action.GetName())
 	}
 	wfContext.CurrentWorker = action.GetWorkerId()
 	wfContext.CurrentTask = req.GetTaskName()
@@ -181,8 +191,10 @@ func isApplicableToSend(context context.Context, logger log.Logger, wfContext *p
 	if err != nil {
 		return false
 	}
+	logger.Info("Found ", len(actions.ActionList), " actions for workflow ", wfContext.GetWorkflowId())
 	if wfContext.GetCurrentActionState() == pb.State_STATE_SUCCESS {
 		if isLastAction(wfContext, actions) {
+			logger.Info(" is last action, Not applicable to send")
 			return false
 		}
 		if wfContext.GetCurrentActionIndex() == 0 {
@@ -193,9 +205,11 @@ func isApplicableToSend(context context.Context, logger log.Logger, wfContext *p
 		}
 	} else if actions.ActionList[wfContext.GetCurrentActionIndex()].GetWorkerId() == workerID {
 		logger.Info(fmt.Sprintf(msgSendWfContext, wfContext.GetWorkflowId()))
+		logger.Info("Is applicable to send")
 		return true
 
 	}
+	logger.Info("Not applicable to send")
 	return false
 }
 

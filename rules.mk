@@ -11,7 +11,7 @@ MAKEFLAGS += --no-builtin-rules
 SHELL := bash
 .SHELLFLAGS := -o pipefail -euc
 
-binaries := cmd/tink-cli/tink-cli cmd/tink-server/tink-server cmd/tink-worker/tink-worker cmd/tink-controller/tink-controller
+binaries := cmd/tink-cli/tink-cli cmd/virtual-worker/virtual-worker cmd/tink-server/tink-server cmd/tink-worker/tink-worker cmd/tink-controller/tink-controller
 version := $(shell git rev-parse --short HEAD)
 tag := $(shell git tag --points-at HEAD)
 ifneq (,$(tag))
@@ -21,11 +21,12 @@ LDFLAGS := -ldflags "-X main.version=$(version)"
 export CGO_ENABLED := 0
 
 cli: cmd/tink-cli/tink-cli
+virtual-worker: cmd/virtual-worker/virtual-worker
 server: cmd/tink-server/tink-server
 worker : cmd/tink-worker/tink-worker
 controller: cmd/tink-controller/tink-controller
 
-.PHONY: server cli worker test $(binaries)
+.PHONY: server cli worker test virtual-worker $(binaries)
 crossbinaries := $(addsuffix -linux-,$(binaries))
 crossbinaries := $(crossbinaries:=386) $(crossbinaries:=amd64) $(crossbinaries:=arm64) $(crossbinaries:=armv6) $(crossbinaries:=armv7)
 
@@ -38,7 +39,7 @@ crossbinaries := $(crossbinaries:=386) $(crossbinaries:=amd64) $(crossbinaries:=
 $(binaries) $(crossbinaries):
 	$(FLAGS) go build $(LDFLAGS) -o $@ ./$(@D)
 
-.PHONY: images tink-cli-image tink-server-image tink-worker-image tink-controller-image
+.PHONY: images tink-cli-image tink-server-image tink-worker-image tink-controller-image virtual-worker-image
 tink-cli-image: cmd/tink-cli/tink-cli-linux-amd64
 	docker build -t tink-cli cmd/tink-cli/
 tink-server-image: cmd/tink-server/tink-server-linux-amd64
@@ -47,6 +48,8 @@ tink-worker-image: cmd/tink-worker/tink-worker-linux-amd64
 	docker build -t tink-worker cmd/tink-worker/
 tink-controller-image: cmd/tink-controller/tink-controller-linux-amd64
 	docker build -t tink-controller cmd/tink-controller/
+virtual-worker-image: cmd/virtual-worker/virtual-worker-linux-amd64
+	docker build -t virtual-worker cmd/virtual-worker/
 
 run-stack:
 	docker-compose up --build

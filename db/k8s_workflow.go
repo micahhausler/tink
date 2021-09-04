@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -57,6 +58,7 @@ func (d *K8sDB) UpdateWorkflowState(ctx context.Context, wfContext *tinkwf.Workf
 	if err != nil {
 		return err
 	}
+	stored := wf.DeepCopy()
 
 	var (
 		taskIndex   int
@@ -75,16 +77,27 @@ func (d *K8sDB) UpdateWorkflowState(ctx context.Context, wfContext *tinkwf.Workf
 		}
 	}
 cont:
+	d.logger.Info(fmt.Sprintf("Updating taskIndex %d action index %d with value: %#v ", taskIndex, actionIndex, wf.Status.Tasks[taskIndex].Actions[actionIndex]))
 	wf.Status.Tasks[taskIndex].Actions[actionIndex].Status = tinkwf.State_name[int32(wfContext.CurrentActionState)]
 	switch wfContext.CurrentActionState {
+	case tinkwf.State_STATE_RUNNING:
+		wf.Status.State = tinkwf.State_name[int32(wfContext.CurrentActionState)]
+		wf.Status.Tasks[taskIndex].Actions[actionIndex].StartedAt = &metav1.Time{time.Now()}
 	case tinkwf.State_STATE_FAILED:
 	case tinkwf.State_STATE_TIMEOUT:
 		wf.Status.State = tinkwf.State_name[int32(wfContext.CurrentActionState)]
 		wf.Status.Tasks[taskIndex].Actions[actionIndex].Seconds = int64(time.Since(wf.Status.Tasks[taskIndex].Actions[actionIndex].StartedAt.Time).Seconds())
 	case tinkwf.State_STATE_SUCCESS:
-		wf.Status.Tasks[taskIndex].Actions[actionIndex].Seconds = int64(time.Since(wf.Status.Tasks[taskIndex].Actions[actionIndex].StartedAt.Time).Seconds())
+		d.logger.Info(fmt.Sprintf("Updating taskIndex %d action index %d with value: %#v ", taskIndex, actionIndex, wf.Status.Tasks[taskIndex].Actions[actionIndex]))
+		if wf.Status.Tasks[taskIndex].Actions[actionIndex].StartedAt != nil {
+			wf.Status.Tasks[taskIndex].Actions[actionIndex].Seconds = int64(time.Since(wf.Status.Tasks[taskIndex].Actions[actionIndex].StartedAt.Time).Seconds())
+		}
+		// Mark success on last action success
+		if wfContext.CurrentActionIndex+1 == wfContext.TotalNumberOfActions {
+			wf.Status.State = tinkwf.State_name[int32(wfContext.CurrentActionState)]
+		}
 	}
-	return d.manager.GetClient().Update(ctx, wf)
+	return d.manager.GetClient().Status().Patch(ctx, wf, client.MergeFrom(stored))
 }
 
 func (d *K8sDB) GetWorkflowsForWorker(ctx context.Context, id string) ([]string, error) {
@@ -126,12 +139,13 @@ func (d *K8sDB) GetWorkflowContexts(ctx context.Context, wfID string) (*tinkwf.W
 		found           bool
 		taskIndex       int
 		taskActionIndex int
-		actionIndex     int = 0
+		actionIndex     int
 		actionCount     int
 	)
 	for ti, task := range wf.Status.Tasks {
 		for ai, action := range task.Actions {
-			if action.Status == tinkwf.State_name[int32(tinkwf.State_STATE_PENDING)] && !found {
+			actionCount++
+			if (action.Status == tinkwf.State_name[int32(tinkwf.State_STATE_PENDING)] || action.Status == tinkwf.State_name[int32(tinkwf.State_STATE_RUNNING)]) && !found {
 				taskIndex = ti
 				actionIndex = ai
 				found = true
@@ -139,7 +153,6 @@ func (d *K8sDB) GetWorkflowContexts(ctx context.Context, wfID string) (*tinkwf.W
 			if !found {
 				actionIndex++
 			}
-			actionCount++
 		}
 	}
 
