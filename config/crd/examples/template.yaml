@@ -38,7 +38,7 @@ spec:
                 datasource:
                   Ec2:
                     # Hegel IP
-                    metadata_urls: ["http://10.1.1.11:50061"]
+                    #metadata_urls: ["http://10.1.1.11:50061"]
                     strict_id: false
                 system_info:
                   default_user:
@@ -66,6 +66,19 @@ spec:
               DIRMODE: 0700
               CONTENTS: |
                 datasource: Ec2
+          - name: "add-root-ssh"
+            image: writefile:v1.0.0
+            timeout: 90
+            environment:
+              DEST_DISK: /dev/nvme0n1p1
+              FS_TYPE: ext4
+              DEST_PATH: /root/.ssh/authorized_keys
+              UID: 0
+              GID: 0
+              MODE: 0600
+              DIRMODE: 0700
+              CONTENTS: |
+                ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDf//aq5bmEgzlzPF102taupa+hsy7n7ZEQYth6NCbdVQ3FhtV/aYqStjtS8UIiUHf+7hTK8llHR8/yC/EEdgYORdU6p8W3aSedNsqU/IMPMX9HkLK2Zz0FHg201lDW1mvCjgUX7VC0bsvz0NY5CDceea9G42c1HfBPEjf8KugegcWFH0FOnJ9P3/ObcaF9IcA5KasNoQyYhgV7sIxPKNHVUYhMLFWR4OwBdoiU8xaVV67LhFERemoo935bwONDboXjmJWrQmGC1Vhy+1YH9feXnSk4gS1wCSsRmSQ/YZUDLbLXT/JfD1SgKwGkjqsFyJVTr6af7TDjn1InWLdAxb5IKeUCUOB1U1BtqcBWdPNddAItYpHZ8tC/EuixmRyo0EOpSWJWu8hIXa13AU8v2mMEM0hH750ANXE65/bgvysIoVaaa285wESipj6+5BfZ4v79TEdIoIZ1yw5b75yb17HAYpwf2GQvFOf58JOGKtnewO61f1KLI3QMPRegW6aFYTc=
           - name: "kexec-debian"
             image: quay.io/tinkerbell-actions/kexec:v1.0.1
             timeout: 90

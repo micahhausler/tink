@@ -32,10 +32,10 @@ const (
 func (s *server) GetWorkflowContexts(req *pb.WorkflowContextRequest, stream pb.WorkflowService_GetWorkflowContextsServer) error {
 	wfs, err := getWorkflowsForWorker(s.db, req.WorkerId)
 	if err != nil {
-		s.logger.Error(err, "no workflows found for worker %s", req.WorkerId)
+		s.logger.Error(err, "error finding workflows for worker %s", req.WorkerId)
 		return err
 	}
-	s.logger.Info("Found workflows for worker ", len(wfs))
+	s.logger.Info("Found ", len(wfs), " workflows for worker ", req.WorkerId)
 	for _, wf := range wfs {
 		s.logger.Info("Getting contexts for workflow ", wf)
 		wfContext, err := s.db.GetWorkflowContexts(context.Background(), wf)
@@ -194,7 +194,6 @@ func isApplicableToSend(context context.Context, logger log.Logger, wfContext *p
 	logger.Info("Found ", len(actions.ActionList), " actions for workflow ", wfContext.GetWorkflowId())
 	if wfContext.GetCurrentActionState() == pb.State_STATE_SUCCESS {
 		if isLastAction(wfContext, actions) {
-			logger.Info(" is last action, Not applicable to send")
 			return false
 		}
 		if wfContext.GetCurrentActionIndex() == 0 {
@@ -205,11 +204,9 @@ func isApplicableToSend(context context.Context, logger log.Logger, wfContext *p
 		}
 	} else if actions.ActionList[wfContext.GetCurrentActionIndex()].GetWorkerId() == workerID {
 		logger.Info(fmt.Sprintf(msgSendWfContext, wfContext.GetWorkflowId()))
-		logger.Info("Is applicable to send")
 		return true
 
 	}
-	logger.Info("Not applicable to send")
 	return false
 }
 
