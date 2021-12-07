@@ -7,7 +7,7 @@ require (
 	github.com/docker/distribution v2.8.1+incompatible
 	github.com/docker/docker v20.10.7+incompatible
 	github.com/equinix-labs/otel-init-go v0.0.1
-	github.com/go-logr/zapr v0.4.0
+	github.com/go-logr/zapr v1.2.0
 	github.com/go-openapi/strfmt v0.19.3 // indirect
 	github.com/golang/protobuf v1.5.2
 	github.com/google/go-cmp v0.5.6
@@ -37,12 +37,12 @@ require (
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.1.0
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/apimachinery v0.22.2
-	k8s.io/client-go v0.22.2
+	k8s.io/apimachinery v0.23.0
+	k8s.io/client-go v0.23.0
 	knative.dev/pkg v0.0.0-20211119170723-a99300deff34
 	mvdan.cc/gofumpt v0.1.1
-	sigs.k8s.io/controller-runtime v0.10.1
-	sigs.k8s.io/controller-tools v0.7.0
+	sigs.k8s.io/controller-runtime v0.11.1
+	sigs.k8s.io/controller-tools v0.8.0
 )
 
 replace github.com/stormcat24/protodep => github.com/ackintosh/protodep v0.0.0-20200728152107-abf8eb579d6c
