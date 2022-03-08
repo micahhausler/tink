@@ -1,6 +1,8 @@
 package v1alpha1
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 const (
 	// WorkflowIDAnnotation is used by the controller to store the
@@ -55,7 +57,7 @@ func (w *Workflow) getTaskActionInfo() taskInfo {
 		if found {
 			continue
 		}
-
+	INNER:
 		for ai, action := range task.Actions {
 			// Find the first non-successful action
 			switch action.Status {
@@ -66,6 +68,7 @@ func (w *Workflow) getTaskActionInfo() taskInfo {
 				taskIndex = ti
 				actionTaskIndex = ai
 				found = true
+				break INNER
 			}
 		}
 	}

@@ -65,7 +65,11 @@ func NewRootCommand(version string, logger log.Logger) *cobra.Command {
 				return err
 			}
 			rClient := pb.NewWorkflowServiceClient(conn)
-
+			logger.With(
+				"worker", workerID,
+				"server", conn.Target(),
+				"state", conn.GetState(),
+			).Info("Connected to server")
 			containerManager := worker.NewFakeContainerManager(logger, 1000, 2000)
 			containerLogger := worker.NewEmptyContainerLogger()
 
@@ -77,6 +81,7 @@ func NewRootCommand(version string, logger log.Logger) *cobra.Command {
 				logger,
 				tinkWorker.WithMaxFileSize(maxFileSize),
 				tinkWorker.WithRetries(retryInterval, retries),
+				tinkWorker.WithDataDir("./worker"),
 				tinkWorker.WithLogCapture(captureActionLogs))
 
 			err = w.ProcessWorkflowActions(ctx)

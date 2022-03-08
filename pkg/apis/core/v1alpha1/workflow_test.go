@@ -341,6 +341,63 @@ func TestWorkflowMethods(t *testing.T) {
 				CurrentActionIndex:   2,
 			},
 		},
+		{
+			"Pending workflow",
+			&Workflow{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Workflow",
+					APIVersion: "tinkerbell.org/v1alpha1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "debian",
+					Namespace: "default",
+				},
+				Spec: WorkflowSpec{},
+				Status: WorkflowStatus{
+					State:         WorkflowStatePending,
+					GlobalTimeout: 600,
+					Tasks: []Task{
+						{
+							Name:       "os-installation",
+							WorkerAddr: "3c:ec:ef:4c:4f:54",
+							Actions: []Action{
+								{
+									Name:    "stream-debian-image",
+									Image:   "quay.io/tinkerbell-actions/image2disk:v1.0.0",
+									Timeout: 60,
+									Environment: map[string]string{
+										"COMPRESSED": "true",
+										"DEST_DISK":  "/dev/nvme0n1",
+										"IMG_URL":    "http://10.1.1.11:8080/debian-10-openstack-amd64.raw.gz",
+									},
+									Status: WorkflowStatePending,
+								},
+								{
+									Name:    "write-file",
+									Image:   "quay.io/tinkerbell-actions/writefile:v1.0.0",
+									Timeout: 60,
+									Environment: map[string]string{
+										"COMPRESSED": "true",
+										"DEST_DISK":  "/dev/nvme0n1",
+										"IMG_URL":    "http://10.1.1.11:8080/debian-10-openstack-amd64.raw.gz",
+									},
+									Status: WorkflowStatePending,
+								},
+							},
+						},
+					},
+				},
+			},
+			taskInfo{
+				TotalNumberOfActions: 2,
+				CurrentTaskIndex:     0,
+				CurrentTask:          "os-installation",
+				CurrentWorker:        "3c:ec:ef:4c:4f:54",
+				CurrentAction:        "stream-debian-image",
+				CurrentActionState:   WorkflowStatePending,
+				CurrentActionIndex:   0,
+			},
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

@@ -173,7 +173,7 @@ func workflowWorkerNonTerminalStateIndexFunc(obj client.Object) []string {
 	}
 
 	resp := []string{}
-	if !(wf.Status.State == "STATE_RUNNING" || wf.Status.State == "STATE_PENDING") {
+	if !(wf.Status.State == v1alpha1.WorkflowStateRunning || wf.Status.State == v1alpha1.WorkflowStatePending) {
 		return resp
 	}
 	for _, task := range wf.Status.Tasks {
@@ -190,7 +190,7 @@ func workflowStateIndexFunc(obj client.Object) []string {
 	if !ok {
 		return nil
 	}
-	return []string{wf.Status.State}
+	return []string{string(wf.Status.State)}
 }
 
 // hardwareMacIndexFunc returns a list of mac addresses from a hardware.

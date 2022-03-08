@@ -8,11 +8,11 @@ all: cli server worker ## Build all binaries for host OS and CPU
 -include kube.mk
 
 crosscompile: $(crossbinaries) ## Build all binaries for Linux and all supported CPU arches
-images: tink-cli-image tink-server-image tink-worker-image ## Build all docker images
+images: tink-cli-image tink-server-image tink-worker-image tink-controller-image ## Build all docker images
 run: crosscompile run-stack ## Builds and runs the Tink stack (tink, db, cli) via docker-compose
 
-test: ## Run tests
-	go test -coverprofile=coverage.txt ./...
+test: e2etest-setup ## Run tests
+	source <(setup-envtest use  -p env) && go test -coverprofile=coverage.txt ./...
 
 verify: lint check-generated # Verify code style, is lint free, freshness ...
 	gofumpt -s -d .

@@ -9,11 +9,11 @@ import (
 type emptyLogger struct{}
 
 // compile-time type check.
-var _ worker.ContainerLogger = &emptyLogger{}
+var _ worker.LogCapturer = &emptyLogger{}
 
 func (l *emptyLogger) CaptureLogs(_ context.Context, _ string) {}
 
 // NewEmptyContainerLogger returns an no-op container logger.
-func NewEmptyContainerLogger() worker.ContainerLogger {
+func NewEmptyContainerLogger() worker.LogCapturer {
 	return &emptyLogger{}
 }

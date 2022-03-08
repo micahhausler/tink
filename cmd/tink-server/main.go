@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"database/sql"
 	"fmt"
 	"os"
 	"os/signal"
@@ -19,7 +18,6 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"github.com/tinkerbell/tink/cmd/tink-server/internal"
-	"github.com/tinkerbell/tink/db"
 	grpcserver "github.com/tinkerbell/tink/grpc-server"
 	httpserver "github.com/tinkerbell/tink/http-server"
 	"github.com/tinkerbell/tink/metrics"
@@ -47,6 +45,7 @@ type DaemonConfig struct {
 	TLS                     bool
 	KubernetesResourceModel bool
 	KubeconfigPath          string
+	KubeAPI                 string
 }
 
 func (c *DaemonConfig) AddFlags(fs *pflag.FlagSet) {
@@ -63,6 +62,8 @@ func (c *DaemonConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&c.TLS, "tls", true, "Run in tls protected mode (disabling should only be done for development or if behind TLS terminating proxy)")
 	fs.BoolVar(&c.KubernetesResourceModel, "kubernetes-backend", false, "Feature flag to use the Kubernetes Resource Model")
 	fs.StringVar(&c.KubeconfigPath, "kubeconfig", "", "The path to the Kubeconfig. Only takes effect if `--kubernetes-backend=true`")
+	fs.StringVar(&c.KubeAPI, "kube-api", "", "The kubernetes API endpoitn. Only takes effect if `--kubernetes-backend=true`")
+
 }
 
 func (c *DaemonConfig) PopulateFromLegacyEnvVar() {
@@ -131,28 +132,12 @@ func NewRootCommand(config *DaemonConfig, logger log.Logger) *cobra.Command {
 			// figure this out in another PR
 			errCh := make(chan error, 2)
 
-			// TODO(gianarb): I moved this up because we need to be sure that both
-			// connection, the one used for the resources and the one used for
-			// listening to events and notification are coming in the same way.
-			// BUT we should be using the right flags
-			connInfo := fmt.Sprintf("dbname=%s user=%s password=%s sslmode=%s",
-				config.PGDatabase,
-				config.PGUSer,
-				config.PGPassword,
-				config.PGSSLMode,
-			)
-			database, err := internal.SetupPostgres(connInfo, config.OnlyMigration, logger)
-			if err != nil {
-				return err
-			}
-			if config.OnlyMigration {
-				return nil
-			}
-
 			var (
+				registrar   grpcserver.Registrar
 				grpcOpts    []grpc.ServerOption
 				certPEM     []byte
 				certModTime *time.Time
+				err         error
 			)
 			if config.TLS {
 				certsDir := os.Getenv("TINKERBELL_CERTS_DIR")
@@ -167,19 +152,44 @@ func NewRootCommand(config *DaemonConfig, logger log.Logger) *cobra.Command {
 				grpcOpts = append(grpcOpts, grpc.Creds(credentials.NewServerTLSFromCert(cert)))
 			}
 
-			tinkAPI, err := server.NewDBServer(
-				logger,
-				database,
-				server.WithCerts(*certModTime, certPEM),
-			)
-			if err != nil {
-				return err
-			}
+			if config.KubernetesResourceModel {
+				var err error
+				registrar, err = server.NewKubeBackedServer(logger, config.KubeconfigPath, config.KubeAPI)
+				if err != nil {
+					return err
+				}
+			} else {
+				// TODO(gianarb): I moved this up because we need to be sure that both
+				// connection, the one used for the resources and the one used for
+				// listening to events and notification are coming in the same way.
+				// BUT we should be using the right flags
+				connInfo := fmt.Sprintf("dbname=%s user=%s password=%s sslmode=%s",
+					config.PGDatabase,
+					config.PGUSer,
+					config.PGPassword,
+					config.PGSSLMode,
+				)
+				database, err := internal.SetupPostgres(connInfo, config.OnlyMigration, logger)
+				if err != nil {
+					return err
+				}
+				if config.OnlyMigration {
+					return nil
+				}
 
+				registrar, err = server.NewDBServer(
+					logger,
+					database,
+					server.WithCerts(*certModTime, certPEM),
+				)
+				if err != nil {
+					return err
+				}
+			}
 			// Start the gRPC server in the background
 			addr, err := grpcserver.SetupGRPC(
 				ctx,
-				tinkAPI,
+				registrar,
 				config.GRPCAuthority,
 				grpcOpts,
 				errCh)
@@ -217,46 +227,6 @@ func NewRootCommand(config *DaemonConfig, logger log.Logger) *cobra.Command {
 	}
 	config.AddFlags(cmd.Flags())
 	return cmd
-}
-
-type dbSetupFunc func(*DaemonConfig, log.Logger) (db.Database, error)
-
-func setupPostgres(config *DaemonConfig, logger log.Logger) (db.Database, error) {
-	// TODO(gianarb): I moved this up because we need to be sure that both
-	// connection, the one used for the resources and the one used for
-	// listening to events and notification are coming in the same way.
-	// BUT we should be using the right flags
-	connInfo := fmt.Sprintf("dbname=%s user=%s password=%s sslmode=%s",
-		config.PGDatabase,
-		config.PGUSer,
-		config.PGPassword,
-		config.PGSSLMode,
-	)
-
-	dbCon, err := sql.Open("postgres", connInfo)
-	if err != nil {
-		return nil, err
-	}
-	tinkDB := db.Connect(dbCon, logger)
-
-	if config.OnlyMigration {
-		logger.Info("Applying migrations. This process will end when migrations will take place.")
-		numAppliedMigrations, err := tinkDB.Migrate()
-		if err != nil {
-			return nil, err
-		}
-		logger.With("num_applied_migrations", numAppliedMigrations).Info("Migrations applied successfully")
-		return nil, nil
-	}
-
-	numAvailableMigrations, err := tinkDB.CheckRequiredMigrations()
-	if err != nil {
-		return nil, err
-	}
-	if numAvailableMigrations != 0 {
-		logger.Info("Your database schema is not up to date. Please apply migrations running tink-server with env var ONLY_MIGRATION set.")
-	}
-	return *tinkDB, nil
 }
 
 func createViper(logger log.Logger) (*viper.Viper, error) {

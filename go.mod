@@ -19,6 +19,8 @@ require (
 	github.com/lib/pq v1.10.1
 	github.com/matryer/moq v0.2.3
 	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
+	github.com/onsi/ginkgo/v2 v2.1.3
+	github.com/onsi/gomega v1.18.1
 	github.com/opencontainers/image-spec v1.0.2
 	github.com/packethost/pkg v0.0.0-20200903155310-0433e0605550
 	github.com/pkg/errors v0.9.1
@@ -42,7 +44,9 @@ require (
 	knative.dev/pkg v0.0.0-20211119170723-a99300deff34
 	mvdan.cc/gofumpt v0.1.1
 	sigs.k8s.io/controller-runtime v0.11.1
+	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20220304125252-9ee63fc65a97
 	sigs.k8s.io/controller-tools v0.8.0
+	sigs.k8s.io/yaml v1.3.0
 )
 
 replace github.com/stormcat24/protodep => github.com/ackintosh/protodep v0.0.0-20200728152107-abf8eb579d6c

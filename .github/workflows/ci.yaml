@@ -41,6 +41,9 @@ jobs:
       - name: Generate
         run: nix-shell --run 'make generate'
 
+      - name: e2etest
+        run: make e2etest-setup
+
       - name: go test
         run: make test
 

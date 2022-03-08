@@ -85,10 +85,12 @@ func (s *DBServer) ReportActionStatus(ctx context.Context, req *workflow.Workflo
 	if err != nil {
 		return nil, status.Errorf(codes.Aborted, err.Error())
 	}
+	l.Info("wfContext: ", fmt.Sprintf("%+v", wfContext))
 	wfActions, err := s.db.GetWorkflowActions(ctx, wfID)
 	if err != nil {
 		return nil, status.Errorf(codes.Aborted, err.Error())
 	}
+	l.Info("wfActions: ", fmt.Sprintf("%+v", wfActions))
 
 	actionIndex := wfContext.GetCurrentActionIndex()
 	if req.GetActionStatus() == workflow.State_STATE_RUNNING {
@@ -100,6 +102,7 @@ func (s *DBServer) ReportActionStatus(ctx context.Context, req *workflow.Workflo
 	if action.GetTaskName() != req.GetTaskName() {
 		return nil, status.Errorf(codes.InvalidArgument, errInvalidTaskReported)
 	}
+	l.Info("action: ", fmt.Sprintf("%#v", action))
 	if action.GetName() != req.GetActionName() {
 		return nil, status.Errorf(codes.InvalidArgument, errInvalidActionReported)
 	}
